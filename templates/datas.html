@@ -1,0 +1,106 @@
+{%load static%}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
+    <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+
+    <title>To Do | APP </title>
+</head>
+
+<body>
+    <div class="card  d-flex justify-content-center align-content-center  " style="margin: 5% auto;">
+        <div class="card-header text-center">
+            TO DO APP
+        </div>
+        <div class="card-body ">
+            <div class="d-flex justify-content-center align-items-center">
+                <input class="input-group" type="text" name="addTodo" id="todos">
+                <button class="btn btn-warning"><i class="fa fa-plus" aria-hidden="true" style="color: white;"
+                        onclick="addTask()"></i></button>
+            </div>
+            {% if list %}
+            <table class="table table-striped">
+                {% for todo in list %}
+                <tr class="justify-content-space">
+                    <td>{{todo.task}}</td>
+                    <td class="d-flex justify-content-end">
+                        <button class="btn btn-success mx-3" onclick="completeTask('{{todo.id}}')"><i
+                                class="fa fa-check" aria-hidden="true"></i></button>
+                        <button class="btn btn-danger" onclick="deleteTask('{{todo.id}}')"><i class="fa fa-trash"
+                                aria-hidden="true"></i></button>
+                    </td>
+
+                </tr>
+                {% endfor %}
+            </table>
+            {% endif %}
+        </div>
+    </div>
+</body>
+<script>
+    function addTask() {
+        const todos = document.getElementById('todos').value;
+        fetch('/todos/api', {
+            method: 'POST',
+            headers: {
+                "X-CSRFToken": '{{csrf_token}}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                'task': todos,
+                'completed': false
+            })
+        })
+            .then(response => response.json())
+            .then(result => {
+                console.log(result);
+            })
+            .catch(error => {
+                console.log(error);
+            })
+    }
+    function deleteTask(id) {
+        fetch('/todos/api/' + id, {
+            method: 'DELETE',
+            headers: {
+                "X-CSRFToken": '{{csrf_token}}',
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(result => {
+                console.log(result);
+            })
+            .catch(error => {
+                console.log(error);
+            })
+    }
+    function completeTask(id) {
+        fetch('/todos/api/' + id + '/', {
+            method: 'PUT',
+            headers: {
+                "X-CSRFToken": '{{csrf_token}}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                'task': '',
+                'completed': true
+            })
+        })
+            .then(response => response.json())
+            .then(result => {
+                console.log(result);
+            })
+            .catch(error => {
+                console.log(error);
+            })
+
+    }
+</script>
+
+</html>
