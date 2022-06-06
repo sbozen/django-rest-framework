@@ -1,26 +1,39 @@
-from django.shortcuts import render
-
+from .models import User
+from django.conf import settings
+from django.core.mail import send_mail
+from .serializers import MyTokenObtainPairSerializer
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib import auth
+from django.contrib.auth.decorators import login_required
 # Create your views here.
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework import permissions
 from .models import Todo
 from .serializers import TodoSerializer
 from rest_framework.views import APIView
+from rest_framework import permissions
 from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
+
+
+class MyObtainTokenPairView(TokenObtainPairView):
+    permission_classes = (AllowAny,)
+    serializer_class = MyTokenObtainPairSerializer
 
 
 class TodoListApiView(APIView):
     # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticated]
 
     # 1. List all
     def get(self, request, *args, **kwargs):
         '''
         List all the todo items for given requested user
         '''
-        todos = Todo.objects.filter(user=request.user.id)
+        todos = Todo.objects.all()
         serializer = TodoSerializer(todos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -40,18 +53,27 @@ class TodoListApiView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+       # 1. List all
+
+    def delete(self, request, *args, **kwargs):
+        '''
+        List all the todo items for given requested user
+        '''
+        todos = Todo.objects.all()
+        todos.delete()
+        serializer = TodoSerializer(todos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TodoDetailApiView(APIView):
     # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self, todo_id, user_id):
         '''
         Helper method to get the object with given todo_id, and user_id
         '''
         try:
-            return Todo.objects.get(id=todo_id, user=user_id)
+            return Todo.objects.get(id=todo_id)
         except Todo.DoesNotExist:
             return None
 
@@ -63,7 +85,7 @@ class TodoDetailApiView(APIView):
         todo_instance = self.get_object(todo_id, request.user.id)
         if not todo_instance:
             return Response(
-                {"res": "Object with todo id does not exists"},
+                {"res": "Obj bulunamadı"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -111,13 +133,15 @@ class TodoDetailApiView(APIView):
         )
 
 
+@login_required(login_url='lgn')
 @api_view(['GET', 'POST'])
 def show(request):
     """
     List all code snippets, or create a new snippet.
     """
     if request.method == 'GET':
-        snippets = Todo.objects.all()
+        snippets = Todo.objects.filter(user_id=request.user.id)
+        print(snippets)
         serializer = TodoSerializer(snippets, many=True)
         return render(request, 'datas.html', {'list': serializer.data})
 
@@ -125,15 +149,67 @@ def show(request):
         serializer = TodoSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return render(request, 'datas.html', {'list': serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# class TodoViews(APIView):
-#     def post(self, request):
-#         serializer = TodoSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_200_OK)
-#         else:
-#             return Response({"status": "error", "data": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+def login(request):
+
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = auth.authenticate(username=username, password=password)
+        if user is not None:
+            auth.login(request, user)
+            messages.add_message(
+                request, messages.SUCCESS, 'Oturum başlatıldı')
+            return redirect('show')
+        else:
+            print(user, "false")
+            messages.add_message(request, messages.ERROR,
+                                 'Yanlış kullanıcı adı ya da parola!')
+            return redirect('lgn')
+    else:
+        return render(request, 'registration/login.html')
+
+
+def logout(request):
+    auth.logout(request)
+    return redirect('lgn')
+
+
+def forgot_psw(request):
+    if request.method == 'GET':
+        return render(request, 'password_reset_form.html')
+    else:
+        user_mail = request.POST.get('email')
+        user = User.objects.get(email=user_mail)
+        subject = 'Site`s reset password'
+        message = f"""
+        You're receiving this email because you requested a password reset for your user account at 127.0.0.1: 8080.
+        Please go to the following page and choose a new password:
+        Please click the link below to reset your password:,
+        http://adasd    
+            Your username, in case you’ve forgotten: {user.username}
+
+            Thanks for using our site!
+
+        The 127.0.0.1: 8080 team"""
+        email_from = settings.EMAIL_HOST_USER
+        recipient_list = [user.email, ]
+        send_mail(subject, message, email_from, recipient_list)
+        return render(request, 'registration/login.html')
+
+
+def registiration(request):
+    if request.method == 'GET':
+        return render(request, 'registration/register.html')
+    else:
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        print(username, email, password)
+        user = User.objects.create_user(
+            username=username, email=email, password=password)
+        user.save()
+        return render(request, 'registration/login.html')

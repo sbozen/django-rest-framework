@@ -13,13 +13,26 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+# from rest_framework_jwt.views import obtain_jwt_token
 from django.contrib import admin
 from django.urls import path, include
 from todo_api import urls as todo_urls
+from rest_framework_simplejwt import views as jwt_views
+# from django.conf.urls import include, url
+
+
+from todo_api.views import MyObtainTokenPairView
+from rest_framework.routers import DefaultRouter
+from django.conf import settings
+from django.conf.urls.static import static
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', include(todo_urls)),
     path('api-auth/', include('rest_framework.urls')),
-    path('todos/', include(todo_urls)),
 
+    path('token/', MyObtainTokenPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # path('accounts/', include('django.contrib.auth.urls')),
 ]

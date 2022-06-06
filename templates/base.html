@@ -1,0 +1,44 @@
+{%load static%}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+    <meta id="data" data-name="{{list}}">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand navbar-light bg-light">
+        <div class="nav navbar-nav d-flex " style=" flex-wrap: nowrap;
+        align-items: center;">
+            <span class="nav-item nav-link d-flex align-items-center text-success"><b>How do u feel today?</b></span>
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-2"><i class="fa-solid fa-star"></i></div>
+                    <div class="col-md-2"><i class="fa-solid fa-star"></i></div>
+                    <div class="col-md-2"><i class="fa-solid fa-star"></i></div>
+                    <div class="col-md-2"><i class="fa-regular fa-star"></i></div>
+                    <div class="col-md-2 order-first"><i class=" fa-solid fa-star"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <a class="nav-item nav-link text-secondary" style="position:absolute; right:0" href="{% url 'logout' %}">
+            Hi, {{user}}<i class="fa-solid fa-door-open fa-xl mx-2" id="logout" title="logout"></i>
+        </a>
+        </div>
+    </nav>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+
+</html>
